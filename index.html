@@ -230,7 +230,7 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;border-radiu
     // dirección suelta: palabra(s) + número de 2 a 5 cifras
     if(!out.direccion){lines.forEach(function(l,i){if(out.direccion||used[i])return;
       if(/^(?:hola|buen)/i.test(l))return;
-      var m=l.match(/(?:[A-Za-zÁÉÍÓÚáéíóúñÑ'.]{3,}\s+){1,4}\d{2,5}(?:\s*(?:,|-)?\s*(?:piso|pb|dpto|depto|departamento|[0-9]{1,2}\s?[a-zA-Z]\b)[^,\n]*)?/);
+      var m=l.match(/(?:[A-Za-zÁÉÍÓÚáéíóúñÑ'.]{3,}\s+){1,4}\d{2,5}(?:\s*(?:,|-)?\s*(?:piso|pb|dpto|depto|departamento|[0-9]{1,2}\s*[a-zA-Z]\b)[^,\n]*)?/);
       if(m&&!/(?:\d{1,2}[\/]\d{1,2}|\bhs\b|:\d{2})/.test(m[0])){out.direccion=m[0].trim();
         var rest=l.replace(m[0],'').replace(/^[\s,.\-]+|[\s,.\-]+$/g,'');if(rest.length<3)mark(i);else lines[i]=rest}})}
     // fecha
@@ -259,7 +259,7 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;border-radiu
           var r2=lines[j].replace(nm[0],'').replace(/^(?:hola|buen[oa]s?(?:\s+\S+)?)[\s,.!]*/i,'').replace(/^[\s,.\-]+|[\s,.\-]+$/g,'');
           if(r2.length<3)mark(j);else lines[j]=r2}}}
     if(!out.nombre){
-      if(sender&&!/^\+?[\d\s\-]+$/.test(sender))out.nombre=sender;
+      if(sender&&!/^\+?[\d\s\-]+$/.test(sender))out.nombre=sender.replace(/^(?:cliente|clienta|sr\.?|sra\.?)\s+/i,'').trim()||sender;
       else{for(var i=0;i<lines.length;i++){var l=lines[i];if(used[i])continue;
         if(/^(?:hola|buen|buenas|disculp|consulta)/i.test(l))continue;
         if(l.length<=32&&!/\d/.test(l)&&l.split(/\s+/).length<=4&&!/\?/.test(l)){out.nombre=l;mark(i);break}}}}
