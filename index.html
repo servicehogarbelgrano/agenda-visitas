@@ -1,0 +1,338 @@
+<title>Agenda de Visitas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;800&display=swap">
+<style>
+/* Layout: una columna tipo celular. Arriba la franja de días, abajo la lista del día elegido, botón de nueva visita fijo. */
+:root{
+  --bg:#fff7e6; --card:#ffffff; --fg:#0a1f3d; --muted:#5d6b80; --line:#eadfc8;
+  --accent:#F39A1E; --accent-fg:#0a1f3d; --navy:#0a1f3d; --navy-fg:#fff7e6;
+  --ok:#1f7a4d; --ok-bg:#dff3e7; --warn-bg:#ffe9c2; --bad:#b3372c; --bad-bg:#fbe0dc;
+  --font:'Montserrat',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0a1f3d; --card:#122c52; --fg:#fff7e6; --muted:#9fb0c9; --line:#25426f;
+  --accent:#F39A1E; --accent-fg:#0a1f3d; --navy:#fff7e6; --navy-fg:#0a1f3d;
+  --ok:#7fd9a8; --ok-bg:#16402f; --warn-bg:#4a3a14; --bad:#ff9d90; --bad-bg:#4a1f1b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0a1f3d; --card:#122c52; --fg:#fff7e6; --muted:#9fb0c9; --line:#25426f;
+  --accent:#F39A1E; --accent-fg:#0a1f3d; --navy:#fff7e6; --navy-fg:#0a1f3d;
+  --ok:#7fd9a8; --ok-bg:#16402f; --warn-bg:#4a3a14; --bad:#ff9d90; --bad-bg:#4a1f1b; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;line-height:1.4;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 96px}
+.wrap{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font-size:20px;font-weight:800;margin:0;letter-spacing:-.01em}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.sub{color:var(--muted);font-size:13px;font-weight:500}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;border-radius:10px;padding:10px 14px;font-weight:600;background:var(--card);border:1px solid var(--line);min-height:44px}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:800}
+button.dark{background:var(--navy);color:var(--navy-fg);border-color:var(--navy)}
+.strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x proximity}
+.day{flex:0 0 auto;min-width:62px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px;border-radius:12px;background:var(--card);border:1px solid var(--line);position:relative}
+.day small{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.day b{font-size:20px;font-weight:800}
+.day i{font-style:normal;font-size:11px;font-weight:800;min-height:16px;color:var(--muted)}
+.day[aria-pressed="true"]{background:var(--navy);color:var(--navy-fg);border-color:var(--navy)}
+.day[aria-pressed="true"] small,.day[aria-pressed="true"] i{color:var(--navy-fg);opacity:.85}
+.day i.has{background:var(--accent);color:var(--accent-fg);border-radius:99px;padding:0 7px;opacity:1}
+.nav{display:flex;gap:8px;align-items:center}
+.nav .grow{flex:1;min-width:0}
+.nav input[type=date]{width:100%}
+input,select,textarea{width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px}
+textarea{min-height:64px;resize:vertical}
+.head{display:flex;flex-direction:column;gap:2px}
+.head h2{margin:0;font-size:22px;font-weight:800;text-transform:capitalize}
+.send{display:flex;gap:8px;flex-wrap:wrap}
+.send button{flex:1 1 140px}
+.list{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.card.hecho{opacity:.7}
+.row1{display:flex;gap:10px;align-items:baseline;justify-content:space-between}
+.hora{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+.pill{font-size:12px;font-weight:800;padding:3px 10px;border-radius:99px;background:var(--warn-bg)}
+.pill.hecho{background:var(--ok-bg);color:var(--ok)}
+.pill.cancelado{background:var(--bad-bg);color:var(--bad)}
+.nombre{font-weight:800;font-size:17px;overflow-wrap:anywhere}
+.meta{color:var(--muted);font-size:14px;overflow-wrap:anywhere}
+.meta b{color:var(--fg);font-weight:600}
+.acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.acts button,.acts a{flex:1 1 auto;min-height:40px;padding:8px 10px;font-size:13px}
+a.btn{display:inline-flex;align-items:center;justify-content:center;border-radius:10px;font-weight:700;text-decoration:none;background:#25D366;color:#06301a;border:1px solid #25D366}
+.empty{border:2px dashed var(--line);border-radius:14px;padding:28px 16px;text-align:center;color:var(--muted)}
+.empty b{display:block;color:var(--fg);font-size:16px;margin-bottom:4px}
+.fab{position:fixed;left:0;right:0;bottom:0;padding:12px max(16px,env(safe-area-inset-left,0px)) calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,var(--bg) 35%);display:flex;justify-content:center;pointer-events:none}
+.fab button{pointer-events:auto;width:100%;max-width:608px;min-height:52px;font-size:16px;box-shadow:0 6px 20px rgba(0,0,0,.2)}
+.form{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.form h2{margin:0;font-size:18px;font-weight:800}
+.form label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chips{display:flex;gap:6px}
+.chips button{flex:1;min-height:36px;padding:6px;font-size:13px}
+.status{font-size:13px;color:var(--muted);min-height:18px}
+.copybox{background:var(--card);border:1px solid var(--accent);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.copybox textarea{min-height:140px}
+@media (max-width:420px){.g2{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div><h1>Agenda de Visitas</h1><div class="sub">Service Hogar Belgrano</div></div>
+    <button id="btnHoy" class="dark">Hoy</button>
+  </div>
+  <div class="strip" id="strip" role="group" aria-label="Días"></div>
+  <div class="nav">
+    <button id="prev" aria-label="Día anterior">‹</button>
+    <div class="grow"><input type="date" id="fechaSel" aria-label="Elegir fecha"></div>
+    <button id="next" aria-label="Día siguiente">›</button>
+  </div>
+  <div class="head"><h2 id="titulo"></h2><div class="sub" id="resumen"></div></div>
+  <div class="send">
+    <button id="copiarDia">Copiar el día</button>
+    <a class="btn" id="waBruno" target="_blank" rel="noopener" style="min-height:44px">Pasar a Bruno</a>
+  </div>
+  <div id="copyArea"></div>
+  <div id="formArea"></div>
+  <div class="list" id="lista"></div>
+  <div class="status" id="status">Conectando…</div>
+</div>
+<div class="fab"><button class="primary" id="nueva">+ Nueva visita</button></div>
+
+<script>
+(function(){
+  var BRUNO='5491167489192';
+  var DIAS=['dom','lun','mar','mié','jue','vie','sáb'];
+  var DIASL=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+  var MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  var all=[], col=null, sel=iso(new Date()), editing=null, form=null, delArm=null;
+  var $=function(id){return document.getElementById(id)};
+  function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+  function parse(s){var p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2])}
+  function addDays(s,n){var d=parse(s);d.setDate(d.getDate()+n);return iso(d)}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function today(){return iso(new Date())}
+  function nice(s){var d=parse(s),t=today();
+    var pre=s===t?'Hoy · ':s===addDays(t,1)?'Mañana · ':s===addDays(t,-1)?'Ayer · ':'';
+    return pre+DIASL[d.getDay()]+' '+d.getDate()+' de '+MESES[d.getMonth()]}
+  function short(s){var d=parse(s);return DIASL[d.getDay()]+' '+d.getDate()+'/'+(d.getMonth()+1)}
+  function waNum(t){var d=String(t||'').replace(/\D/g,'');if(!d)return '';
+    if(d.indexOf('54')===0)return d.indexOf('549')===0?d:'549'+d.slice(2);
+    d=d.replace(/^0/,'');return '549'+d}
+  function dayVisits(s){return all.filter(function(v){return v.fecha===s}).sort(function(a,b){return (a.hora||'99:99')<(b.hora||'99:99')?-1:1})}
+  function lineOf(v,i){
+    return (i+1)+') '+(v.hora||'s/h')+' · '+v.nombre+(v.tel?' · '+v.tel:'')+'\n   '+(v.direccion||'sin dirección')+'\n   '+(v.equipo||'')+(v.falla?': '+v.falla:'')+(v.notas?'\n   Nota: '+v.notas:'')}
+  function dayText(s){var l=dayVisits(s).filter(function(v){return v.estado!=='cancelado'});
+    if(!l.length)return 'Visitas '+short(s)+': ninguna.';
+    return 'Visitas '+short(s)+' ('+l.length+')\n\n'+l.map(lineOf).join('\n\n')}
+  function msgCliente(v){var t=today();var cuando=v.fecha===t?'hoy':v.fecha===addDays(t,1)?'mañana':'el '+short(v.fecha);
+    return 'Hola '+v.nombre+', te confirmo la visita de Service Hogar Belgrano '+cuando+(v.hora?' a las '+v.hora:'')+(v.direccion?' en '+v.direccion:'')+'. Cualquier cosa avisame.'}
+
+  function renderStrip(){
+    var t=today(),start=addDays(sel<t?sel:t,0),h='';
+    var from=sel<t?sel:t; // arranca en hoy, o en el día elegido si es anterior
+    for(var i=0;i<14;i++){var s=addDays(from,i),d=parse(s),n=dayVisits(s).filter(function(v){return v.estado!=='cancelado'}).length;
+      h+='<button class="day" data-d="'+s+'" aria-pressed="'+(s===sel)+'"><small>'+(s===t?'hoy':DIAS[d.getDay()])+'</small><b>'+d.getDate()+'</b><i class="'+(n?'has':'')+'">'+(n?n:'')+'</i></button>'}
+    $('strip').innerHTML=h;
+    var cur=$('strip').querySelector('[aria-pressed="true"]');
+    if(cur&&cur.scrollIntoView){try{cur.scrollIntoView({inline:'nearest',block:'nearest'})}catch(e){}}
+  }
+  function renderList(){
+    var l=dayVisits(sel),act=l.filter(function(v){return v.estado!=='cancelado'});
+    $('titulo').textContent=nice(sel);
+    var pend=act.filter(function(v){return v.estado==='pendiente'}).length;
+    $('resumen').textContent=act.length?act.length+(act.length===1?' visita':' visitas')+' · '+pend+' pendientes':'Sin visitas cargadas';
+    $('fechaSel').value=sel;
+    $('waBruno').href='https://wa.me/'+BRUNO+'?text='+encodeURIComponent(dayText(sel));
+    if(!l.length){$('lista').innerHTML='<div class="empty"><b>Día libre</b>Tocá “Nueva visita” cuando te escriba un cliente.</div>';return}
+    $('lista').innerHTML=l.map(function(v){
+      var wa=waNum(v.tel),est=v.estado||'pendiente';
+      return '<div class="card '+est+'"><div class="row1"><span class="hora">'+esc(v.hora||'Sin hora')+'</span><span class="pill '+est+'">'+est+'</span></div>'+
+      '<div class="nombre">'+esc(v.nombre)+'</div>'+
+      '<div class="meta"><b>'+esc(v.equipo||'')+'</b>'+(v.falla?' · '+esc(v.falla):'')+'</div>'+
+      (v.direccion?'<div class="meta">📍 '+esc(v.direccion)+'</div>':'')+
+      (v.tel?'<div class="meta">'+esc(v.tel)+'</div>':'')+
+      (v.notas?'<div class="meta">Nota: '+esc(v.notas)+'</div>':'')+
+      '<div class="acts">'+
+      (wa?'<a class="btn" target="_blank" rel="noopener" href="https://wa.me/'+wa+'?text='+encodeURIComponent(msgCliente(v))+'">WhatsApp</a>':'')+
+      '<button data-a="copy" data-id="'+v.id+'">Copiar</button>'+
+      (est!=='hecho'?'<button data-a="hecho" data-id="'+v.id+'">Hecho</button>':'<button data-a="pend" data-id="'+v.id+'">Reabrir</button>')+
+      '<button data-a="edit" data-id="'+v.id+'">Editar</button>'+
+      (est!=='cancelado'?'<button data-a="cancel" data-id="'+v.id+'">Cancelar</button>':'')+
+      '<button data-a="del" data-id="'+v.id+'">'+(delArm===v.id?'¿Seguro? Borrar':'Borrar')+'</button>'+
+      '</div></div>'}).join('');
+  }
+  function renderAll(){renderStrip();renderList()}
+
+  function openForm(v){
+    editing=v?v.id:null;
+    var d=v||{nombre:'',tel:'',direccion:'',equipo:'',falla:'',fecha:sel,hora:'',notas:''};
+    $('formArea').innerHTML='<form class="form" id="f"><h2>'+(v?'Editar visita':'Nueva visita')+'</h2>'+
+     (v?'':'<label>Pegá el mensaje de WhatsApp<textarea id="f_paste" placeholder="Copiá el mensaje del cliente en WhatsApp y pegalo acá"></textarea></label><div class="g2"><button type="button" id="fMic" hidden>Dictar por voz</button><button type="button" id="fParse" class="dark">Acomodar datos</button></div><div class="sub" id="parseInfo"></div>')+
+     '<label>Nombre<input id="f_nombre" required autocomplete="off" value="'+esc(d.nombre)+'"></label>'+
+     '<label>WhatsApp / teléfono<input id="f_tel" type="tel" inputmode="tel" placeholder="11 5555-5555" value="'+esc(d.tel)+'"></label>'+
+     '<label>Dirección<input id="f_dir" autocomplete="off" value="'+esc(d.direccion)+'"></label>'+
+     '<div class="g2"><label>Equipo<input id="f_eq" list="eqs" placeholder="Aire, lavarropas…" value="'+esc(d.equipo)+'"></label>'+
+     '<label>Hora<input id="f_hora" type="time" value="'+esc(d.hora)+'"></label></div>'+
+     '<datalist id="eqs"><option>Aire acondicionado</option><option>Lavarropas</option><option>Heladera</option><option>Cocina</option><option>Horno</option><option>Microondas</option><option>Secarropas</option><option>Lavavajillas</option><option>Termotanque</option></datalist>'+
+     '<label>Qué le pasa<input id="f_falla" autocomplete="off" value="'+esc(d.falla)+'"></label>'+
+     '<label>Día<input id="f_fecha" type="date" required value="'+esc(d.fecha)+'"></label>'+
+     '<div class="chips"><button type="button" id="cHoy">Hoy</button><button type="button" id="cMan">Mañana</button></div>'+
+     '<label>Notas<textarea id="f_notas">'+esc(d.notas)+'</textarea></label>'+
+     '<div class="g2"><button type="button" id="fCancel">Cerrar</button><button type="submit" class="primary">Guardar</button></div></form>';
+    $('cHoy').onclick=function(){$('f_fecha').value=today()};
+    $('cMan').onclick=function(){$('f_fecha').value=addDays(today(),1)};
+    $('fCancel').onclick=closeForm;
+    $('f').onsubmit=function(e){e.preventDefault();save()};
+    if($('f_paste')){
+      $('fParse').onclick=function(){applyParsed(parseMsg($('f_paste').value))};
+      $('f_paste').addEventListener('paste',function(){setTimeout(function(){applyParsed(parseMsg($('f_paste').value))},0)});
+      $('f_paste').focus();
+      if(dict){$('fMic').hidden=false;
+        $('fMic').onclick=function(){
+          if(micOn){dict.stop().catch(function(){});return}
+          dict.start().catch(function(){$('parseInfo').textContent='No se pudo usar el micrófono. Escribí o pegá el mensaje.'})};
+      }
+    }else $('f_nombre').focus();
+    $('formArea').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  var EQ=[[/aire|split|inverter|frigor[ií]as/i,'Aire acondicionado'],[/lava\s?rropas|lavaropas|lavarropa/i,'Lavarropas'],[/heladera|freezer/i,'Heladera'],[/cocina|anafe|horno/i,'Cocina u horno'],[/microondas/i,'Microondas'],[/secarropas|secadora/i,'Secarropas'],[/lavavajillas/i,'Lavavajillas'],[/termotanque|calef[oó]n/i,'Termotanque']];
+  var WD=['domingo','lunes','martes','mi[eé]rcoles','jueves','viernes','s[aá]bado'];
+  function parseMsg(raw){
+    var out={},t=String(raw||'').replace(/\r/g,'');
+    var lines=t.split('\n').map(function(l){return l.trim()}).filter(Boolean);
+    var sender='';
+    lines=lines.map(function(l){
+      var m=l.match(/^\[?\d{1,2}[\/.]\d{1,2}[\/.]\d{2,4},?\s+\d{1,2}[:.]\d{2}(?::\d{2})?\s*(?:[ap]\.?\s?m\.?)?\]?\s*-?\s*([^:]{1,40}):\s*(.*)$/i);
+      if(m){if(!sender)sender=m[1].trim();return m[2]}
+      return l}).filter(Boolean);
+    var used={};
+    function mark(i){used[i]=true}
+    // etiquetas
+    lines.forEach(function(l,i){var m;
+      if((m=l.match(/^(?:nombre|cliente|se[ñn]or(?:a)?)\s*[:\-]\s*(.+)/i))){out.nombre=m[1];mark(i)}
+      else if((m=l.match(/^(?:direcci[oó]n|domicilio|calle|dir)\s*[:\-]\s*(.+)/i))){out.direccion=m[1];mark(i)}
+      else if((m=l.match(/^(?:tel[eé]fono|tel|cel|celular|whatsapp|wsp)\s*[:\-]?\s*(.+)/i))){out.tel=m[1];mark(i)}
+      else if((m=l.match(/^(?:equipo|aparato)\s*[:\-]\s*(.+)/i))){out.equipoTxt=m[1];mark(i)}
+      else if((m=l.match(/^(?:falla|problema|motivo)\s*[:\-]\s*(.+)/i))){out.falla=m[1];mark(i)}
+    });
+    // teléfono suelto
+    if(!out.tel){lines.forEach(function(l,i){if(out.tel||used[i])return;
+      var m=l.match(/\+?\d[\d\s\-().]{6,}\d/g);
+      if(m){for(var k=0;k<m.length;k++){var n=m[k].replace(/\D/g,'');if(n.length>=8&&n.length<=13){out.tel=m[k].trim();
+        var rest=l.replace(m[k],'').replace(/^(?:tel[eé]fono|tel|cel|whatsapp)\s*[:\-]?/i,'').trim();
+        if(rest.length<3)mark(i);else lines[i]=rest;break}}}})}
+    // dirección suelta: palabra(s) + número de 2 a 5 cifras
+    if(!out.direccion){lines.forEach(function(l,i){if(out.direccion||used[i])return;
+      if(/^(?:hola|buen)/i.test(l))return;
+      var m=l.match(/(?:[A-Za-zÁÉÍÓÚáéíóúñÑ'.]{3,}\s+){1,4}\d{2,5}(?:\s*(?:,|-)?\s*(?:piso|pb|dpto|depto|departamento|[0-9]{1,2}\s?[a-zA-Z]\b)[^,\n]*)?/);
+      if(m&&!/(?:\d{1,2}[\/]\d{1,2}|\bhs\b|:\d{2})/.test(m[0])){out.direccion=m[0].trim();
+        var rest=l.replace(m[0],'').replace(/^[\s,.\-]+|[\s,.\-]+$/g,'');if(rest.length<3)mark(i);else lines[i]=rest}})}
+    // fecha
+    var low=t.toLowerCase(),td=today(),mm;
+    if(/\bpasado\s+ma[ñn]ana\b/.test(low))out.fecha=addDays(td,2);
+    else if(/\bma[ñn]ana\b(?!\s+(?:temprano|a\s+la))/.test(low)&&!/a\s+la\s+ma[ñn]ana/.test(low))out.fecha=addDays(td,1);
+    else if(/\bhoy\b/.test(low))out.fecha=td;
+    if(!out.fecha&&(mm=low.match(/\b(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?\b/))){
+      var dd=+mm[1],mo=+mm[2],y=mm[3]?(+mm[3]<100?2000+ +mm[3]:+mm[3]):parse(td).getFullYear();
+      if(mo>=1&&mo<=12&&dd>=1&&dd<=31)out.fecha=y+'-'+String(mo).padStart(2,'0')+'-'+String(dd).padStart(2,'0')}
+    if(!out.fecha){for(var w=0;w<7;w++){if(new RegExp('\\b'+WD[w]+'\\b').test(low)){
+      var cur=parse(td).getDay(),diff=(w-cur+7)%7;if(diff===0)diff=7;out.fecha=addDays(td,diff);break}}}
+    // hora
+    if((mm=low.match(/\b(\d{1,2})\s?[:.h]\s?(\d{2})\b/))&&+mm[1]<24&&+mm[2]<60)out.hora=String(mm[1]).padStart(2,'0')+':'+mm[2];
+    else if((mm=low.match(/\ba\s+las\s+(\d{1,2})\b(?:\s*(?:hs|horas))?/))&&+mm[1]<24)out.hora=String(mm[1]).padStart(2,'0')+':00';
+    if(out.hora&&/(\d)\s?(?:de la tarde|pm|p\.m)/.test(low)){var hh=+out.hora.slice(0,2);if(hh<12)out.hora=String(hh+12).padStart(2,'0')+out.hora.slice(2)}
+    // equipo
+    var eqSrc=out.equipoTxt||t;
+    for(var q=0;q<EQ.length;q++){if(EQ[q][0].test(eqSrc)){out.equipo=EQ[q][1];break}}
+    if(!out.equipo&&out.equipoTxt)out.equipo=out.equipoTxt;
+    // nombre
+    if(!out.nombre){
+      if(sender&&!/^\+?[\d\s\-]+$/.test(sender))out.nombre=sender;
+      else{for(var i=0;i<lines.length;i++){var l=lines[i];if(used[i])continue;
+        if(/^(?:hola|buen|buenas|disculp|consulta)/i.test(l))continue;
+        if(l.length<=32&&!/\d/.test(l)&&l.split(/\s+/).length<=4&&!/\?/.test(l)){out.nombre=l;mark(i);break}}}}
+    // falla: lo que sobra
+    if(!out.falla){
+      var rest=lines.filter(function(l,i){return !used[i]&&l!==out.nombre&&!/^(?:hola|buen|buenas)[^.]{0,20}$/i.test(l)});
+      var f=rest.join(' ').replace(/\s+/g,' ').trim();
+      if(f)out.falla=f.length>160?f.slice(0,157)+'…':f}
+    return out;
+  }
+  function applyParsed(p){
+    var map={nombre:'f_nombre',tel:'f_tel',direccion:'f_dir',equipo:'f_eq',falla:'f_falla',fecha:'f_fecha',hora:'f_hora'};
+    var got=[],miss=[],lab={nombre:'nombre',tel:'teléfono',direccion:'dirección',equipo:'equipo',falla:'falla',fecha:'día',hora:'hora'};
+    Object.keys(map).forEach(function(k){var el=$(map[k]);
+      if(p[k]){el.value=p[k];got.push(lab[k])}else miss.push(lab[k])});
+    var inf=$('parseInfo');
+    if(inf)inf.textContent=got.length?('Cargué: '+got.join(', ')+'.'+(miss.length?' Falta: '+miss.join(', ')+'.':'')+' Revisá antes de guardar.'):'No encontré datos. Cargalos a mano.';
+  }
+  function closeForm(){$('formArea').innerHTML='';editing=null}
+  function save(){
+    if(!col){setStatus('Sin conexión a la base: no se puede guardar.');return}
+    var id=editing||('v'+Date.now().toString(36));
+    var prev=all.filter(function(v){return v.id===id})[0];
+    var data={nombre:$('f_nombre').value.trim(),tel:$('f_tel').value.trim(),direccion:$('f_dir').value.trim(),
+      equipo:$('f_eq').value.trim(),falla:$('f_falla').value.trim(),fecha:$('f_fecha').value,hora:$('f_hora').value,
+      notas:$('f_notas').value.trim(),estado:prev?prev.estado:'pendiente',creado:prev?prev.creado:Date.now()};
+    if(!data.nombre||!data.fecha)return;
+    col.doc(id).set(data).then(function(){sel=data.fecha;closeForm();setStatus('Guardado.');renderAll()},
+      function(e){setStatus('No se pudo guardar ('+(e&&e.code||'error')+'). Probá de nuevo.')});
+  }
+  function setEstado(id,est){if(!col)return;col.doc(id).update({estado:est}).catch(function(e){setStatus('No se pudo actualizar ('+(e&&e.code||'error')+').')})}
+  function setStatus(t){$('status').textContent=t}
+  function showCopy(text){
+    $('copyArea').innerHTML='<div class="copybox"><div class="sub">Seleccioná y copiá:</div><textarea id="ct" readonly></textarea><button id="ctx">Cerrar</button></div>';
+    $('ct').value=text;$('ct').focus();$('ct').select();$('ctx').onclick=function(){$('copyArea').innerHTML=''};
+  }
+  function copy(text,ok){
+    var done=function(){setStatus(ok)};
+    try{navigator.clipboard.writeText(text).then(done,function(){showCopy(text)})}catch(e){showCopy(text)}
+  }
+
+  $('strip').addEventListener('click',function(e){var b=e.target.closest('.day');if(b){sel=b.dataset.d;renderAll()}});
+  $('btnHoy').onclick=function(){sel=today();renderAll()};
+  $('prev').onclick=function(){sel=addDays(sel,-1);renderAll()};
+  $('next').onclick=function(){sel=addDays(sel,1);renderAll()};
+  $('fechaSel').onchange=function(){if(this.value){sel=this.value;renderAll()}};
+  $('nueva').onclick=function(){openForm(null)};
+  $('copiarDia').onclick=function(){copy(dayText(sel),'Día copiado. Pegalo donde quieras.')};
+  $('lista').addEventListener('click',function(e){
+    var b=e.target.closest('button[data-a]');if(!b)return;
+    var id=b.dataset.id,a=b.dataset.a,v=all.filter(function(x){return x.id===id})[0];if(!v)return;
+    if(a!=='del')delArm=null;
+    if(a==='copy')copy(lineOf(v,0).replace(/^1\) /,''),'Visita copiada.');
+    else if(a==='hecho')setEstado(id,'hecho');
+    else if(a==='pend')setEstado(id,'pendiente');
+    else if(a==='cancel')setEstado(id,'cancelado');
+    else if(a==='edit')openForm(v);
+    else if(a==='del'){
+      if(delArm===id){delArm=null;col.doc(id).delete().catch(function(){setStatus('No se pudo borrar.')})}
+      else{delArm=id;renderList()}
+    }
+  });
+
+  var dict=null,micOn=false;
+  (async function(){
+    try{dict=await claude.use('dictation')}catch(e){}
+    if(!dict)return;
+    dict.onFinal(function(r){var ta=$('f_paste');if(!ta)return;
+      ta.value=(ta.value?ta.value+' ':'')+r.text;applyParsed(parseMsg(ta.value))});
+    dict.onState(function(s){micOn=s.state==='listening';var b=$('fMic');if(b)b.textContent=micOn?'Parar (escuchando…)':'Dictar por voz'});
+    var b=$('fMic');if(b)b.hidden=false;
+  })();
+  renderAll();
+  var timer=setTimeout(function(){setStatus('Todavía no se pudo leer la agenda. Revisá la conexión.')},10000);
+  (async function(){
+    var db=null;try{db=await claude.use('db')}catch(e){}
+    if(!db){clearTimeout(timer);setStatus('La agenda necesita abrirse con tu sesión de Claude para guardar datos.');return}
+    col=db.collection('visitas');
+    col.onSnapshot(function(snap){
+      all=snap.docs.map(function(d){var x=d.data();x.id=d.id;return x});
+      if(!snap.metadata.fromCache){clearTimeout(timer);setStatus(all.length?all.length+' visitas guardadas':'Todavía no hay visitas. Cargá la primera.')}
+      renderAll();
+    },function(e){clearTimeout(timer);setStatus('Error al leer la agenda ('+(e&&e.code||'desconocido')+').')});
+  })();
+})();
+</script>
