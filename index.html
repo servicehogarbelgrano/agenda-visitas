@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0a1f3d"><link rel="apple-touch-icon" href="icon-192.png">
 <title>Agenda de Visitas</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;800&display=swap">
@@ -359,6 +360,12 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;border-radiu
     var b=$('fMic');if(b)b.hidden=false;
   })();
   renderAll();
+  // Compartir desde WhatsApp: el texto llega en la dirección (?text=...)
+  try{
+    var qs=new URLSearchParams(location.search),shared=[qs.get('title'),qs.get('text'),qs.get('url')].filter(Boolean).join('\n');
+    if(shared){openForm(null);var pt=$('f_paste');if(pt){pt.value=shared;applyParsed(parseMsg(shared))}
+      if(history.replaceState)history.replaceState(null,'',location.pathname)}
+  }catch(e){}
   var timer=setTimeout(function(){setStatus('Todavía no se pudo leer la agenda. Revisá la conexión.')},10000);
   (async function(){
     var db=null;try{db=await claude.use('db')}catch(e){}
@@ -373,4 +380,5 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;border-radiu
 })();
 </script>
 
+<script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(function(){});</script>
 </html>
