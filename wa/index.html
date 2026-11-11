@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WhatsApp · Service Hogar Belgrano</title>
+<meta name="robots" content="noindex">
+<style>
+:root{--bg:#fff7e6;--fg:#0a1f3d;--accent:#F39A1E}
+@media (prefers-color-scheme:dark){:root{--bg:#0a1f3d;--fg:#fff7e6}}
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,'Segoe UI',sans-serif;padding:24px;text-align:center}
+main{max-width:360px}
+h1{font-size:22px;margin:0 0 8px}
+p{margin:0 0 20px;opacity:.85}
+a{display:block;background:#25D366;color:#06301a;font-weight:800;text-decoration:none;padding:16px;border-radius:12px;font-size:17px}
+small{display:block;margin-top:14px;opacity:.7}
+</style></head><body><main>
+<h1>Service Hogar Belgrano</h1>
+<p>Te abrimos WhatsApp para que nos cuentes qué necesitás.</p>
+<a id="go" href="#">Abrir WhatsApp</a>
+<small id="who"></small>
+</main>
+<script>
+(function(){
+  var tecnicos=[{n:'Mauricio',t:'5491165711314'},{n:'Bruno',t:'5491167489192'}];
+  var msg='Hola, los encontré en Google. Necesito un técnico para: ';
+  var elegido=tecnicos[Math.floor(Math.random()*tecnicos.length)];
+  var url='https://wa.me/'+elegido.t+'?text='+encodeURIComponent(msg);
+  document.getElementById('go').href=url;
+  var test=/[?&]test\b/.test(location.search);
+  if(test){document.getElementById('who').textContent='Prueba: te tocó '+elegido.n;return}
+  setTimeout(function(){location.replace(url)},400);
+})();
+</script></body></html>
