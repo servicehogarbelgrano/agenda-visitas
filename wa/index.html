@@ -22,11 +22,40 @@ small{display:block;margin-top:14px;opacity:.7}
 (function(){
   var tecnicos=[{n:'Mauricio',t:'5491165711314'},{n:'Bruno',t:'5491167489192'}];
   var msg='Hola, los encontré en Google. Necesito un técnico para: ';
-  var elegido=tecnicos[Math.floor(Math.random()*tecnicos.length)];
-  var url='https://wa.me/'+elegido.t+'?text='+encodeURIComponent(msg);
-  document.getElementById('go').href=url;
+  var NS='servicehogarbelgrano-wa', KEY='turno';
   var test=/[?&]test\b/.test(location.search);
-  if(test){document.getElementById('who').textContent='Prueba: te tocó '+elegido.n;return}
-  setTimeout(function(){location.replace(url)},400);
+  var done=false;
+
+  // Contador compartido y atómico: cada visita suma 1 y el número decide a quién le toca (par/impar).
+  var servicios=[
+    {url:function(){return 'https://api.counterapi.dev/v1/'+NS+'/'+KEY+(test?'':'/up')},n:function(j){return j.count}},
+    {url:function(){return 'https://abacus.jasoncameron.dev/'+(test?'get':'hit')+'/'+NS+'/'+KEY},n:function(j){return j.value}}
+  ];
+
+  function ir(elegido,aviso){
+    if(done)return;done=true;
+    var url='https://wa.me/'+elegido.t+'?text='+encodeURIComponent(msg);
+    document.getElementById('go').href=url;
+    if(test){document.getElementById('who').textContent='Prueba: te tocaría '+elegido.n+(aviso||'');return}
+    setTimeout(function(){location.replace(url)},300);
+  }
+  function porNumero(n){return tecnicos[n%tecnicos.length]}
+  function porHorario(){ // último recurso si los dos servicios fallan
+    var h=Math.floor((Date.now()-3*3600000)/3600000);
+    return tecnicos[Math.floor(h/3)%tecnicos.length];
+  }
+  function probar(i){
+    if(i>=servicios.length){ir(porHorario(),' (sin contador, por horario)');return}
+    var ctl=window.AbortController?new AbortController():null;
+    var to=setTimeout(function(){if(ctl)ctl.abort()},2500);
+    fetch(servicios[i].url(),{signal:ctl?ctl.signal:undefined})
+      .then(function(r){if(!r.ok)throw 0;return r.json()})
+      .then(function(j){clearTimeout(to);var n=Number(servicios[i].n(j));if(isNaN(n))throw 0;ir(porNumero(test?n+1:n))})
+      .catch(function(){clearTimeout(to);probar(i+1)});
+  }
+  document.getElementById('go').addEventListener('click',function(e){
+    if(this.getAttribute('href')==='#')e.preventDefault();
+  });
+  probar(0);
 })();
 </script></body></html>
