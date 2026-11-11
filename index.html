@@ -1,3 +1,5 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Agenda de Visitas</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;800&display=swap">
@@ -313,6 +315,20 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;border-radiu
     }
   });
 
+  var localMode=false;
+  function localCol(){
+    var K='agenda_visitas_v1',ls=[];
+    function load(){try{return JSON.parse(localStorage.getItem(K)||'{}')}catch(e){return {}}}
+    function put(o){try{localStorage.setItem(K,JSON.stringify(o))}catch(e){}}
+    function emit(){var o=load(),snap={docs:Object.keys(o).map(function(id){return {id:id,data:function(){return Object.assign({},o[id])}}}),metadata:{fromCache:false}};ls.forEach(function(f){f(snap)})}
+    return {
+      onSnapshot:function(f){ls.push(f);setTimeout(emit,0)},
+      doc:function(id){return {
+        set:function(d){var o=load();o[id]=d;put(o);emit();return Promise.resolve()},
+        update:function(d){var o=load();if(o[id])Object.assign(o[id],d);put(o);emit();return Promise.resolve()},
+        delete:function(){var o=load();delete o[id];put(o);emit();return Promise.resolve()}}}
+    }
+  }
   var dict=null,micOn=false;
   (async function(){
     try{dict=await claude.use('dictation')}catch(e){}
@@ -326,13 +342,15 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;border-radiu
   var timer=setTimeout(function(){setStatus('Todavía no se pudo leer la agenda. Revisá la conexión.')},10000);
   (async function(){
     var db=null;try{db=await claude.use('db')}catch(e){}
-    if(!db){clearTimeout(timer);setStatus('La agenda necesita abrirse con tu sesión de Claude para guardar datos.');return}
+    if(!db){db={collection:function(){return localCol()}};localMode=true}
     col=db.collection('visitas');
     col.onSnapshot(function(snap){
       all=snap.docs.map(function(d){var x=d.data();x.id=d.id;return x});
-      if(!snap.metadata.fromCache){clearTimeout(timer);setStatus(all.length?all.length+' visitas guardadas':'Todavía no hay visitas. Cargá la primera.')}
+      if(!snap.metadata.fromCache){clearTimeout(timer);setStatus((all.length?all.length+' visitas guardadas':'Todavía no hay visitas. Cargá la primera.')+(localMode?' · Se guardan solo en este celular.':''))}
       renderAll();
     },function(e){clearTimeout(timer);setStatus('Error al leer la agenda ('+(e&&e.code||'desconocido')+').')});
   })();
 })();
 </script>
+
+</html>
