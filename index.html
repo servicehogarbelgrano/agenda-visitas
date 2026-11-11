@@ -335,9 +335,21 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;border-radiu
         delete:function(){var o=load();delete o[id];put(o);emit();return Promise.resolve()}}}
     }
   }
+  function webDict(){
+    var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return null;
+    var r=new SR(),fin=null,st=null;r.lang='es-AR';r.continuous=true;r.interimResults=false;
+    r.onresult=function(e){for(var i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal&&fin)fin({text:e.results[i][0].transcript})}};
+    r.onstart=function(){if(st)st({state:'listening'})};
+    r.onend=function(){if(st)st({state:'idle'})};
+    r.onerror=function(){if(st)st({state:'idle'})};
+    return {onFinal:function(f){fin=f},onState:function(f){st=f},
+      start:function(){try{r.start();return Promise.resolve()}catch(e){return Promise.reject(e)}},
+      stop:function(){try{r.stop()}catch(e){}return Promise.resolve()}};
+  }
   var dict=null,micOn=false;
   (async function(){
     try{dict=await claude.use('dictation')}catch(e){}
+    if(!dict)dict=webDict();
     if(!dict)return;
     dict.onFinal(function(r){var ta=$('f_paste');if(!ta)return;
       ta.value=(ta.value?ta.value+' ':'')+r.text;applyParsed(parseMsg(ta.value))});
