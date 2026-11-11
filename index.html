@@ -43,7 +43,12 @@ button.dark{background:var(--navy);color:var(--navy-fg);border-color:var(--navy)
 .nav{display:flex;gap:8px;align-items:center}
 .nav .grow{flex:1;min-width:0}
 .nav input[type=date]{width:100%}
-input,select,textarea{width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px}
+input,select,textarea{width:100%;max-width:100%;min-width:0;font-size:16px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px}
+input[type=date],input[type=time]{-webkit-appearance:none;appearance:none;display:block}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{overflow-x:hidden}
+.wrap,.form,.card,.list,.nav .grow,.g2>*{min-width:0;max-width:100%}
+button,a.btn{touch-action:manipulation}
 textarea{min-height:64px;resize:vertical}
 .head{display:flex;flex-direction:column;gap:2px}
 .head h2{margin:0;font-size:22px;font-weight:800;text-transform:capitalize}
