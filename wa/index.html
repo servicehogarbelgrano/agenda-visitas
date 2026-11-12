@@ -12,16 +12,35 @@ h1{font-size:22px;margin:0 0 8px}
 p{margin:0 0 20px;opacity:.85}
 a{display:block;background:#25D366;color:#06301a;font-weight:800;text-decoration:none;padding:16px;border-radius:12px;font-size:17px}
 small{display:block;margin-top:14px;opacity:.7}
+#preg button{display:block;width:100%;margin:0 0 10px;padding:15px;border:2px solid var(--accent);border-radius:12px;background:transparent;color:var(--fg);font-size:17px;font-weight:700;cursor:pointer}
+#preg button:active{background:var(--accent);color:#0a1f3d}
+.oculto{display:none}
 </style></head><body><main>
 <h1>Service Hogar Belgrano</h1>
-<p>Te abrimos WhatsApp para que nos cuentes qué necesitás.</p>
+<div id="preg" class="oculto">
+<p>¡Gracias por comunicarte! ¿Qué necesitás reparar?</p>
+<button data-t="heladera">🧊 Heladera</button>
+<button data-t="lavarropas">👕 Lavarropas</button>
+<button data-t="cocina">🔥 Cocina u horno</button>
+<button data-t="aire">❄️ Aire acondicionado</button>
+<button data-t="otro">🔧 Otro</button>
+</div>
+<div id="abrir" class="oculto">
+<p>Te abrimos WhatsApp con el técnico para que nos cuentes qué necesitás.</p>
 <a id="go" href="#">Abrir WhatsApp</a>
+</div>
 <small id="who"></small>
 </main>
 <script>
 (function(){
   var tecnicos=[{n:'Mauricio',t:'5491165711314'},{n:'Bruno',t:'5491167489192'}];
-  var msg='Hola, los encontré en Google. Necesito un técnico para: ';
+  var msg='Hola, necesito un técnico para: ';
+  // Tipo de reparación por link: /wa/?t=heladera  (heladera va siempre a Bruno; el resto se reparte)
+  var tm=location.search.match(/[?&]t=([^&#]*)/);
+  var tipo=tm?decodeURIComponent(tm[1].replace(/\+/g,' ')).toLowerCase().replace(/[^a-záéíóúñ0-9 ]/g,'').trim().slice(0,30):'';
+  var NOMBRES={heladera:'heladera',lavarropas:'lavarropas',cocina:'cocina u horno',aire:'aire acondicionado',otro:''};
+  if(!NOMBRES.hasOwnProperty(tipo))tipo='';
+  var FIJOS={heladera:'Bruno'};
   var NS='servicehogarbelgrano-wa', KEY='turno';
   var test=/[?&]test\b/.test(location.search);
   var done=false;
@@ -56,6 +75,21 @@ small{display:block;margin-top:14px;opacity:.7}
   document.getElementById('go').addEventListener('click',function(e){
     if(this.getAttribute('href')==='#')e.preventDefault();
   });
-  probar(0);
+  function arrancar(t){
+    tipo=t;
+    msg+=(NOMBRES[t]||'otro equipo')+'.';
+    document.getElementById('preg').className='oculto';
+    document.getElementById('abrir').className='';
+    var fijo=FIJOS[t];
+    if(fijo){
+      for(var k=0;k<tecnicos.length;k++){if(tecnicos[k].n===fijo){ir(tecnicos[k],' ('+t+': siempre '+fijo+')');return}}
+    }
+    probar(0);
+  }
+  if(tipo){arrancar(tipo);return}
+  // Sin tipo en el link: primero preguntamos qué hay que reparar
+  document.getElementById('preg').className='';
+  var bs=document.querySelectorAll('#preg button');
+  for(var b=0;b<bs.length;b++)bs[b].addEventListener('click',function(){arrancar(this.getAttribute('data-t'))});
 })();
 </script></body></html>
