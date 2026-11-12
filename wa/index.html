@@ -12,18 +12,18 @@ h1{font-size:22px;margin:0 0 8px}
 p{margin:0 0 20px;opacity:.85}
 a{display:block;background:#25D366;color:#06301a;font-weight:800;text-decoration:none;padding:16px;border-radius:12px;font-size:17px}
 small{display:block;margin-top:14px;opacity:.7}
-#preg button{display:block;width:100%;margin:0 0 10px;padding:15px;border:2px solid var(--accent);border-radius:12px;background:transparent;color:var(--fg);font-size:17px;font-weight:700;cursor:pointer}
-#preg button:active{background:var(--accent);color:#0a1f3d}
+#preg a.b{display:block;box-sizing:border-box;width:100%;margin:0 0 10px;padding:15px;border:2px solid var(--accent);border-radius:12px;background:transparent;color:var(--fg);font-size:17px;font-weight:700}
+#preg a.b:active{background:var(--accent);color:#0a1f3d}
 .oculto{display:none}
 </style></head><body><main>
 <h1>Service Hogar Belgrano</h1>
 <div id="preg" class="oculto">
 <p><b>¡Hola! 👋 Decinos qué tenés que reparar</b><br>y te comunicamos rápido con el técnico disponible.</p>
-<button data-t="heladera">🧊 Heladera</button>
-<button data-t="lavarropas">👕 Lavarropas</button>
-<button data-t="cocina">🔥 Cocina u horno</button>
-<button data-t="aire">❄️ Aire acondicionado</button>
-<button data-t="otro">🔧 Otro</button>
+<a class="b" data-t="heladera" href="#">🧊 Heladera</a>
+<a class="b" data-t="lavarropas" href="#">👕 Lavarropas</a>
+<a class="b" data-t="cocina" href="#">🔥 Cocina u horno</a>
+<a class="b" data-t="aire" href="#">❄️ Aire acondicionado</a>
+<a class="b" data-t="otro" href="#">🔧 Otro</a>
 <small>⚡ Es un toque: elegís y se abre WhatsApp con el técnico.</small>
 </div>
 <div id="abrir" class="oculto">
@@ -100,17 +100,38 @@ small{display:block;margin-top:14px;opacity:.7}
     {url:'https://api.counterapi.dev/v1/'+NS+'/'+KEY,n:function(j){return j.count}},
     {url:'https://abacus.jasoncameron.dev/get/'+NS+'/'+KEY,n:function(j){return j.value}}
   ];
+  function urlPara(tec,t){return 'https://wa.me/'+tec.t+'?text='+encodeURIComponent('Hola, necesito un técnico para: '+(NOMBRES[t]||'otro equipo')+'.')}
+  // Deja cada botón como link directo a WhatsApp: al tocarlo, el celular abre la app sin pasar por una página web
+  function armarLinks(){
+    var bs=document.querySelectorAll('#preg a.b');
+    for(var b=0;b<bs.length;b++){
+      var t=bs[b].getAttribute('data-t'),tec=null;
+      if(FIJOS[t]){for(var k=0;k<tecnicos.length;k++)if(tecnicos[k].n===FIJOS[t])tec=tecnicos[k]}
+      else if(previo)tec=previo.tec;
+      if(tec&&!test)bs[b].href=urlPara(tec,t);
+    }
+  }
   function adelantar(i){
     if(i>=leer.length||done)return;
     fetch(leer[i].url).then(function(r){if(!r.ok)throw 0;return r.json()})
-      .then(function(j){var n=Number(leer[i].n(j));if(isNaN(n))throw 0;previo={i:i,tec:porNumero(n+1)}})
+      .then(function(j){var n=Number(leer[i].n(j));if(isNaN(n))throw 0;previo={i:i,tec:porNumero(n+1)};armarLinks()})
       .catch(function(){adelantar(i+1)});
   }
   if(tipo){arrancar(tipo);return}
   adelantar(0);
   // Sin tipo en el link: primero preguntamos qué hay que reparar
   document.getElementById('preg').className='';
-  var bs=document.querySelectorAll('#preg button');
-  for(var b=0;b<bs.length;b++)bs[b].addEventListener('click',function(){arrancar(this.getAttribute('data-t'))});
+  armarLinks(); // la heladera ya queda lista al instante; los demás cuando llega el turno
+  var bs=document.querySelectorAll('#preg a.b');
+  for(var b=0;b<bs.length;b++)bs[b].addEventListener('click',function(e){
+    var t=this.getAttribute('data-t');
+    if(this.getAttribute('href')!=='#'){
+      // link directo: no lo frenamos; solo sumamos el turno de fondo si no es heladera
+      if(!FIJOS[t]&&previo){try{fetch(servicios[previo.i].url(),{keepalive:true,mode:'cors'})}catch(x){}}
+      return;
+    }
+    e.preventDefault();
+    arrancar(t);
+  });
 })();
 </script></body></html>
