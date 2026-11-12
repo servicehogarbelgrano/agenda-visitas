@@ -87,9 +87,27 @@ small{display:block;margin-top:14px;opacity:.7}
     if(fijo){
       for(var k=0;k<tecnicos.length;k++){if(tecnicos[k].n===fijo){ir(tecnicos[k],' ('+t+': siempre '+fijo+')');return}}
     }
+    if(previo){ // ya sabíamos a quién le toca: abrimos al instante y sumamos el turno en segundo plano
+      if(!test){try{fetch(servicios[previo.i].url(),{keepalive:true,mode:'cors'})}catch(e){}}
+      ir(previo.tec,' (calculado al abrir la página)');
+      return;
+    }
     probar(0);
   }
+  // Apenas entra, mira el turno SIN sumarlo (por si se va sin tocar nada)
+  var previo=null;
+  var leer=[
+    {url:'https://api.counterapi.dev/v1/'+NS+'/'+KEY,n:function(j){return j.count}},
+    {url:'https://abacus.jasoncameron.dev/get/'+NS+'/'+KEY,n:function(j){return j.value}}
+  ];
+  function adelantar(i){
+    if(i>=leer.length||done)return;
+    fetch(leer[i].url).then(function(r){if(!r.ok)throw 0;return r.json()})
+      .then(function(j){var n=Number(leer[i].n(j));if(isNaN(n))throw 0;previo={i:i,tec:porNumero(n+1)}})
+      .catch(function(){adelantar(i+1)});
+  }
   if(tipo){arrancar(tipo);return}
+  adelantar(0);
   // Sin tipo en el link: primero preguntamos qué hay que reparar
   document.getElementById('preg').className='';
   var bs=document.querySelectorAll('#preg button');
