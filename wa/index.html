@@ -27,8 +27,8 @@ small{display:block;margin-top:14px;opacity:.7}
 <small>⚡ Es un toque: elegís y se abre WhatsApp con el técnico.</small>
 </div>
 <div id="abrir" class="oculto">
-<p>Te abrimos WhatsApp con el técnico para que nos cuentes qué necesitás.</p>
-<a id="go" href="#">Abrir WhatsApp</a>
+<p>⏳ Abriendo WhatsApp con el técnico…</p>
+<a id="go" href="#" class="oculto">Si no se abre, tocá acá</a>
 </div>
 <small id="who"></small>
 </main>
@@ -57,7 +57,7 @@ small{display:block;margin-top:14px;opacity:.7}
     var url='https://wa.me/'+elegido.t+'?text='+encodeURIComponent(msg);
     document.getElementById('go').href=url;
     if(test){document.getElementById('who').textContent='Prueba: te tocaría '+elegido.n+(aviso||'');return}
-    setTimeout(function(){location.replace(url)},300);
+    location.replace(url);
   }
   function porNumero(n){return tecnicos[n%tecnicos.length]}
   function porHorario(){ // último recurso si los dos servicios fallan
@@ -81,6 +81,8 @@ small{display:block;margin-top:14px;opacity:.7}
     msg+=(NOMBRES[t]||'otro equipo')+'.';
     document.getElementById('preg').className='oculto';
     document.getElementById('abrir').className='';
+    // botón de respaldo solo si a los 3 segundos no se abrió WhatsApp
+    setTimeout(function(){document.getElementById('go').className=''},3000);
     var fijo=FIJOS[t];
     if(fijo){
       for(var k=0;k<tecnicos.length;k++){if(tecnicos[k].n===fijo){ir(tecnicos[k],' ('+t+': siempre '+fijo+')');return}}
